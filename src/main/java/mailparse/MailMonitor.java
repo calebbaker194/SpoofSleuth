@@ -1,6 +1,7 @@
 package mailparse;
 
 import java.util.Properties;
+import java.util.Scanner;
 
 import javax.mail.AuthenticationFailedException;
 import javax.mail.Folder;
@@ -15,6 +16,8 @@ import javax.mail.event.MessageCountEvent;
 
 import com.sun.mail.imap.IMAPFolder;
 import com.sun.mail.imap.IMAPStore;
+
+import data.Database;
 import mailalert.Notifier;
 import mailobject.ImapServer;
 
@@ -55,13 +58,39 @@ public class MailMonitor {
 	                {
 	                    try // MAIN MESSAGE PARSE LOGIC
 	                    {   
-	                    	System.out.println("Recieved Message From "+ message.getFrom()[0].toString());
-	                    	String client = message.getHeader("Received-SPF")[0].split("\\n")[6];
-	                    	String countryCode = MailCentral.getCountryCode(client.substring(client.indexOf("=")+1));
-	                    	if(! ( countryCode.equals("US") || countryCode.equals("LOCAL") ))
-	                    	{
-	                    		Notifier.notify("it@pittsburgsteel.com",message);
-	                    	}
+	                    	
+	                    	String recSpf = message.getHeader("Received-SPF")[0];
+	                    	
+	                    	// IP Check
+	                    	String client = recSpf.substring(recSpf.indexOf("client-ip=")+10).replaceAll("[\\s;]", "");
+	                    	String countryCode = MailCentral.getCountryCode(client);
+//	                    	if(! ( countryCode.equals("US") || countryCode.equals("LOCAL") ))
+//	                    	{
+//	                    		Notifier.notify("it@pittsburgsteel.com",message);
+//	                    	}
+	                    	
+	                    	// SPF Check
+	                    	Scanner spfsc = new Scanner(recSpf);
+	                    	String spfResult = spfsc.next();
+	                    	spfsc.close();
+	                    	
+	                    	// Spoof Check
+	                    	String returnPath = message.getHeader("Return-Path")[0];
+	                    	String returnPathAddress = returnPath.substring(returnPath.indexOf('<')+1,returnPath.indexOf('>'));
+	                    	String fromField = message.getFrom()[0].toString();
+	                    	System.out.println(fromField);
+	                    	String fromFieldAddress = fromField.substring(fromField.indexOf('<')+1,fromField.indexOf('>'));
+	                    	String domain = fromFieldAddress.substring(fromFieldAddress.indexOf('@')+1);
+	                    	// Notify Results
+	                    	int check=0;
+	                    	
+	                    	check+= Database.checkApprovedDomain(countryCode, domain) ? 0 : 1;
+	                    	check+= spfResult.equalsIgnoreCase("pass") || spfResult.equalsIgnoreCase("softfail") || spfResult.equalsIgnoreCase("neutral") || spfResult.equalsIgnoreCase("none") ? 0 : 2;
+	                    	check+= returnPathAddress.equals(fromFieldAddress) ? 0 : 4;
+	                    	
+	                    	if(check != 0)
+	                    		Notifier.notify(check, domain, spfResult, countryCode, returnPathAddress, fromFieldAddress);
+	                    	
 	                    }
 	                    catch (FolderClosedException e)
 	                    {

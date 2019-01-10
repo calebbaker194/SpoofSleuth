@@ -58,11 +58,11 @@ public class RemotOpen extends UnicastRemoteObject implements spfRemote{
 	
 	public static void checkForProgramRunning()
 	{
-		if(!new File("process.lock").exists())
+		if(!new File("data/process.lock").exists())
 		{
 			try
 			{
-				new File("process.lock").createNewFile();
+				new File("data/process.lock").createNewFile();
 			} catch (IOException e)
 			{
 				e.printStackTrace();
@@ -71,7 +71,7 @@ public class RemotOpen extends UnicastRemoteObject implements spfRemote{
 		
 		try
 		{
-			ins = new RandomAccessFile ("process.lock", "rw");
+			ins = new RandomAccessFile ("data/process.lock", "rw");
 			lock = ins.getChannel().tryLock();
 			
 			if(lock == null)

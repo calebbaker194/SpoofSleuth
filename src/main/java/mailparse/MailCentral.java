@@ -1,14 +1,11 @@
 package mailparse;
 
-import java.io.File;
-import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.net.HttpURLConnection;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Scanner;
 
 import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -21,7 +18,7 @@ public class MailCentral {
 	private static HashMap<String, String> ipData = new HashMap<String, String>();
 	@SuppressWarnings("unused")
 	private static Main parent;
-	private static String accessKey = readAccessKey();
+	private static String accessKey = FetchNStore.readAccessKey();
 	
 	
 	public static String getCountryCode(String ipAddress) {
@@ -58,22 +55,6 @@ public class MailCentral {
 			e.printStackTrace();
 		}
 		return "UNK";
-	}
-
-	private static String readAccessKey()
-	{
-		try
-		{
-			Scanner apikey = new Scanner(new File("data/ipstack.key"));
-			String tmp = apikey.nextLine();
-			apikey.close();
-			return tmp;
-			
-		} catch (FileNotFoundException e)
-		{
-			e.printStackTrace();
-		}
-		return "";
 	}
 
 	public static void setParent(Main main)

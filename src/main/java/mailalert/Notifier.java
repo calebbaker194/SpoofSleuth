@@ -1,25 +1,22 @@
 package mailalert;
 
-import java.io.File;
-import java.io.FileNotFoundException;
 import java.util.HashMap;
 import java.util.Properties;
-import java.util.Scanner;
-
 import javax.mail.Message;
 import javax.mail.MessagingException;
 import javax.mail.Session;
 import javax.mail.Transport;
-import javax.mail.Message.RecipientType;
 import javax.mail.internet.AddressException;
 import javax.mail.internet.InternetAddress;
 import javax.mail.internet.MimeMessage;
+import data.FetchNStore;
 
 public class Notifier {
 	
-	private static HashMap<String, String> notifyInfo = readNotifyInfo();
+	private static HashMap<String, String> notifyInfo = FetchNStore.readNotifyInfo();
 	
-	public static void notify(String string, Message suspicious)
+	public static void notify(int check, String domain, String spfResult, String countryCode, String returnPathAddress,
+			String fromFieldAddress)
 	{
 		Properties props = System.getProperties();
         props.put("mail.smtp.starttls.enable", "true");
@@ -35,12 +32,25 @@ public class Notifier {
         try 
         {
             message.setFrom(new InternetAddress("caleb.baker194@gmail.com"));
-            message.addRecipient(Message.RecipientType.TO, new InternetAddress("it@pittsburgsteel.com"));
-
-            message.setSubject("COUNTRY CODE WARNING");           
-            message.setText("Email-To: "+suspicious.getRecipients(RecipientType.TO).toString() + "\n" +
-            				"    From: "+suspicious.getFrom()[0].toString() + "\n" +
-            				" Subject: "+suspicious.getSubject());
+            message.addRecipient(Message.RecipientType.TO, new InternetAddress("caleb.baker194@gmail.com"));
+            
+            String subject = "";
+            
+            subject += check > 3 ? "POSSIBLE SPOOF: " : "" ;
+            subject += check % 4 > 1 ? "SPF FAILURE: " : "" ;
+            subject += check % 2 == 1 ? "COUNRTY CODE WARNING: " : "" ; 
+            
+            message.setSubject(subject); 
+            
+            String text = "";
+            
+            text += check > 3 ? "Return-Path: "+returnPathAddress+"\nFrom: "+fromFieldAddress+"\n" : "" ;
+            text += check % 4 > 1 ? "SPF-Result: "+spfResult + "\n" : "" ;
+            text += "Domain: " + domain + "\n";
+            text += check % 2 == 1 ? "Country Code: " + countryCode : "" ; 
+            
+            message.setText(text);
+            
             Transport transport = session.getTransport("smtp");
             transport.connect("smtp.gmail.com", notifyInfo.get("user"), notifyInfo.get("password"));
             transport.sendMessage(message, message.getAllRecipients());
@@ -53,21 +63,4 @@ public class Notifier {
             me.printStackTrace();
         }
     }
-
-	private static HashMap<String, String> readNotifyInfo()
-	{
-		HashMap<String, String> tmp = new HashMap<String, String>();
-		Scanner notinfo;
-		try
-		{
-			notinfo = new Scanner(new File("notifyinfo.data"));
-			tmp.put("user", notinfo.nextLine());
-			tmp.put("password", notinfo.nextLine());
-			notinfo.close();
-		} catch (FileNotFoundException e)
-		{
-			e.printStackTrace();
-		}
-		return tmp;
-	}
 }

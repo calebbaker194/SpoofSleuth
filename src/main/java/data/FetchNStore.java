@@ -2,6 +2,7 @@ package data;
 
 import java.io.File;
 import java.io.FileInputStream;
+import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.ObjectInputStream;
@@ -9,6 +10,7 @@ import java.io.ObjectOutputStream;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.HashMap;
+import java.util.Scanner;
 
 import com.fasterxml.jackson.core.JsonGenerationException;
 import com.fasterxml.jackson.databind.JsonMappingException;
@@ -23,11 +25,11 @@ public class FetchNStore {
 	{
 		try
 		{
-			if(!new File("IpData.map").exists())
+			if(!new File("data/IpData.map").exists())
 			{
-				new File("IpData.map").createNewFile();
+				new File("data/IpData.map").createNewFile();
 			}
-			ObjectOutputStream objectWriter = new ObjectOutputStream(new FileOutputStream("IpData.map"));
+			ObjectOutputStream objectWriter = new ObjectOutputStream(new FileOutputStream("data/IpData.map"));
 			objectWriter.writeObject(ipData);
 			objectWriter.flush();
 			objectWriter.close();
@@ -52,7 +54,7 @@ public class FetchNStore {
 	{
 		try
 		{
-			ObjectInputStream objectReader = new ObjectInputStream(new FileInputStream("IpData.map"));
+			ObjectInputStream objectReader = new ObjectInputStream(new FileInputStream("data/IpData.map"));
 			HashMap<String,String> ipData = (HashMap<String, String>) objectReader.readObject();
 			objectReader.close();
 			Main.saved = true;
@@ -74,7 +76,7 @@ public class FetchNStore {
 		HashMap<String,ImapServer> emails = new HashMap<String, ImapServer>();
 		try
 		{
-			byte[] emailData = Files.readAllBytes(Paths.get("maildata.json"));
+			byte[] emailData = Files.readAllBytes(Paths.get("data/maildata.json"));
 			ObjectMapper objectMapper = new ObjectMapper();
 			HashMap<String, HashMap<String,Object>> tmp = new HashMap<String , HashMap<String,Object>>();
 			tmp = objectMapper.readValue(emailData, new HashMap<String, ImapServer>().getClass());
@@ -103,12 +105,45 @@ public class FetchNStore {
 		return null;
 	}
 	
+	public static HashMap<String, String> readNotifyInfo()
+	{
+		HashMap<String, String> tmp = new HashMap<String, String>();
+		Scanner notinfo;
+		try
+		{
+			notinfo = new Scanner(new File("data/notifyinfo.data"));
+			tmp.put("user", notinfo.nextLine());
+			tmp.put("password", notinfo.nextLine());
+			notinfo.close();
+		} catch (FileNotFoundException e)
+		{
+			e.printStackTrace();
+		}
+		return tmp;
+	}
+	
+	public static String readAccessKey()
+	{
+		try
+		{
+			Scanner apikey = new Scanner(new File("data/ipstack.key"));
+			String tmp = apikey.nextLine();
+			apikey.close();
+			return tmp;
+			
+		} catch (FileNotFoundException e)
+		{
+			e.printStackTrace();
+		}
+		return "";
+	}
+	
 	public void saveEmailData(HashMap<String,ImapServer> emails) {
 		ObjectMapper o = new ObjectMapper();
 		o.enable(SerializationFeature.INDENT_OUTPUT);
 		try
 		{
-			o.writeValue(new File("maildata.json"), emails);
+			o.writeValue(new File("data/maildata.json"), emails);
 		} catch (JsonGenerationException e)
 		{
 			// TODO Auto-generated catch block
