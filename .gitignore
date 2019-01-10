@@ -13,6 +13,6 @@
 hs_err_pid*
 
 # to keep private files private
-/data
+/data/
 /build/
 /.gradle
