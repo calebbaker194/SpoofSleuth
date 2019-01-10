@@ -1,1 +1,3 @@
-SpoofSleuth
+SpoofSleuth is designed to be a spam and phishing detector designed to work in an imap environment. It can be used if you do not have direct access to the email server in order to try to eleminate some of the basic email threats. 
+
+In the future I would like to be able to configure the aplication on the fly to do things such as region checks and and possibly allow users to set up server forwarding rules so that mail isnt opened until it has been scanned. In my current Idea mail would travel as follows |Incmomming Main| ----> |ScanFolder| ----> |SpoofSleuth Scanns| ----> |Inbox| this would make it clear what mail has been scanned and what mail has not been scanned. 
