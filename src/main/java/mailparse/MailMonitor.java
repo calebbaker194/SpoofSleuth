@@ -1,8 +1,10 @@
 package mailparse;
 
+import java.util.HashMap;
 import java.util.Properties;
 import java.util.Scanner;
 
+import javax.mail.Address;
 import javax.mail.AuthenticationFailedException;
 import javax.mail.Folder;
 import javax.mail.FolderClosedException;
@@ -89,7 +91,25 @@ public class MailMonitor {
 	                    	check+= returnPathAddress.equals(fromFieldAddress) ? 0 : 4;
 	                    	
 	                    	if(check != 0)
-	                    		Notifier.notify(check, domain, spfResult, countryCode, returnPathAddress, fromFieldAddress);
+	                    	{
+	                    		HashMap<String, String> tmp = new HashMap<String, String>();
+	                    		tmp.put("domain", domain);
+	                    		tmp.put("spfResult", spfResult);
+	                    		tmp.put("countryCode", countryCode);
+	                    		tmp.put("returnPath", returnPathAddress);
+	                    		tmp.put("from", fromFieldAddress);
+	                    		
+	                    		String recp = "";
+	                    		for(Address s : message.getAllRecipients())
+	                    		{
+	                    			recp += s.toString()+",";
+	                    		}
+	                    		
+	                    		tmp.put("to", recp.substring(0,recp.length()-1));
+	                    		tmp.put("subject", message.getSubject());
+	                    		tmp.put("body", message.getContent().toString());
+	                    		Notifier.notify(check, tmp);
+	                    	}
 	                    	
 	                    }
 	                    catch (FolderClosedException e)
