@@ -1,9 +1,9 @@
 package mailparse;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Properties;
 import java.util.Scanner;
-
 import javax.mail.Address;
 import javax.mail.AuthenticationFailedException;
 import javax.mail.Folder;
@@ -15,13 +15,12 @@ import javax.mail.Session;
 import javax.mail.Store;
 import javax.mail.event.MessageCountAdapter;
 import javax.mail.event.MessageCountEvent;
-
 import com.sun.mail.imap.IMAPFolder;
 import com.sun.mail.imap.IMAPStore;
-
 import data.Database;
 import mailalert.Notifier;
 import mailobject.ImapServer;
+import mailobject.MailAttachment;
 
 public class MailMonitor {
 
@@ -29,6 +28,8 @@ public class MailMonitor {
     
 	public MailMonitor(ImapServer user) {
 	
+		System.out.println("Prepairing to monitor "+user.getAddress());
+		
 	    Properties properties = new Properties();
 	    // properties.put("mail.debug", "true");
 	    properties.put("mail.store.protocol", user.getImapProtocol());
@@ -66,10 +67,6 @@ public class MailMonitor {
 	                    	// IP Check
 	                    	String client = recSpf.substring(recSpf.indexOf("client-ip=")+10).replaceAll("[\\s;]", "");
 	                    	String countryCode = MailCentral.getCountryCode(client);
-//	                    	if(! ( countryCode.equals("US") || countryCode.equals("LOCAL") ))
-//	                    	{
-//	                    		Notifier.notify("it@pittsburgsteel.com",message);
-//	                    	}
 	                    	
 	                    	// SPF Check
 	                    	Scanner spfsc = new Scanner(recSpf);
@@ -80,15 +77,33 @@ public class MailMonitor {
 	                    	String returnPath = message.getHeader("Return-Path")[0];
 	                    	String returnPathAddress = returnPath.substring(returnPath.indexOf('<')+1,returnPath.indexOf('>'));
 	                    	String fromField = message.getFrom()[0].toString();
-	                    	System.out.println(fromField);
+	                    	System.out.println("  !FF!   " +fromField);
+	                    	System.out.println("  !RP!   "+returnPathAddress);
 	                    	String fromFieldAddress = fromField.substring(fromField.indexOf('<')+1,fromField.indexOf('>'));
 	                    	String domain = fromFieldAddress.substring(fromFieldAddress.indexOf('@')+1);
+	                    	
+	                    	// Macro Check
+	                    	int macroCount = 0;
+	                    	ArrayList<MailAttachment> attachments = MailCentral.getAttachments(message);
+	                    	ArrayList<MailAttachment> corrupt = new ArrayList<MailAttachment>();
+	                    	if(attachments != null)
+	                    	{
+		                    	for(MailAttachment st : attachments)
+		                    	{
+		                    		corrupt.add(st);
+		                    		macroCount += PoiMaster.hasMacro(st.getAttachment()) ? 1 : 0;
+		                    	}
+	                    	}
+	                    	
+	                    	
+	                    	
 	                    	// Notify Results
 	                    	int check=0;
 	                    	
 	                    	check+= Database.checkApprovedDomain(countryCode, domain) ? 0 : 1;
 	                    	check+= spfResult.equalsIgnoreCase("pass") || spfResult.equalsIgnoreCase("softfail") || spfResult.equalsIgnoreCase("neutral") || spfResult.equalsIgnoreCase("none") ? 0 : 2;
-	                    	check+= returnPathAddress.equals(fromFieldAddress) ? 0 : 4;
+	                    	check+= checkDomainSpoof(fromFieldAddress, returnPath, domain) ? 0 : 4;
+	                    	check+= macroCount > 0 ? 8 : 0 ;
 	                    	
 	                    	if(check != 0)
 	                    	{
@@ -108,6 +123,13 @@ public class MailMonitor {
 	                    		tmp.put("to", recp.substring(0,recp.length()-1));
 	                    		tmp.put("subject", message.getSubject());
 	                    		tmp.put("body", message.getContent().toString());
+	                    		tmp.put("macroCount",""+macroCount);
+	                    		
+	                    		for(int x=0; x<macroCount; x++)
+	                    		{
+	                    			tmp.put("infected"+x,corrupt.get(x).getName());
+	                    		}
+	                    		
 	                    		Notifier.notify(check, tmp);
 	                    	}
 	                    	
@@ -122,11 +144,17 @@ public class MailMonitor {
 	                    }
 	                }
 	            }
+
+				private boolean checkDomainSpoof(String fromFieldAddress, String returnPath, String domain)
+				{
+					return !(returnPath.equals(fromFieldAddress)
+						|| returnPath.matches("^.*[\\.@]"+domain+"$"));
+				}
 	        });
 	
 	        idleThread = new IdleThread(inbox, user);
 	        idleThread.setDaemon(false);
-	        //idleThread.start();
+	        
 	
 	    } catch (AuthenticationFailedException e) {
 	    	System.out.println("Authentication Failed");
@@ -174,7 +202,11 @@ public class MailMonitor {
                 try {
                     ensureOpen(folder, user);
                     ((IMAPFolder) folder).idle();
-                } catch (Exception e) {
+                }
+                catch (FolderClosedException e) {
+                	System.out.println("Folder Closed. Re-opening "+folder.getName()+" For "+user.getAddress());
+                }
+                catch (Exception e) {
                     // something went wrong
                     // wait and try again
                     e.printStackTrace();

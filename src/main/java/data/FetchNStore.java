@@ -43,7 +43,6 @@ public class FetchNStore {
 			Thread.sleep(30000);
 		} catch (InterruptedException e)
 		{
-			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
 		
@@ -64,7 +63,6 @@ public class FetchNStore {
 			e.printStackTrace();
 		} catch (ClassNotFoundException e)
 		{
-			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
 		return null;
@@ -99,7 +97,6 @@ public class FetchNStore {
 			return emails;
 		} catch (IOException e)
 		{
-			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
 		return null;
@@ -146,15 +143,12 @@ public class FetchNStore {
 			o.writeValue(new File("data/maildata.json"), emails);
 		} catch (JsonGenerationException e)
 		{
-			// TODO Auto-generated catch block
 			e.printStackTrace();
 		} catch (JsonMappingException e)
 		{
-			// TODO Auto-generated catch block
 			e.printStackTrace();
 		} catch (IOException e)
 		{
-			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
 	}

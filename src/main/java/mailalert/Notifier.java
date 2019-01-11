@@ -35,9 +35,10 @@ public class Notifier {
             
             String subject = "";
             
-            subject += check > 3 ? "POSSIBLE SPOOF: " : "" ;
-            subject += check % 4 > 1 ? "SPF FAILURE: " : "" ;
-            subject += check % 2 == 1 ? "COUNRTY CODE WARNING: " : "" ; 
+            subject += check > 8 ? "MACRO DETECTED: " : "" ; // check for 8
+            subject += check % 8 > 3 ? "POSSIBLE SPOOF: " : "" ; // check for 4
+            subject += check % 4 > 1 ? "SPF FAILURE: " : "" ; // check for 2
+            subject += check % 2 == 1 ? "COUNRTY CODE WARNING: " : "" ; //check for 1
             
             message.setSubject(subject); 
             
@@ -47,9 +48,20 @@ public class Notifier {
             text += check % 4 > 1 ? "SPF-Result: "+data.get("spfResult") + "\n" : "" ;
             text += "Domain: " + data.get("domain") + "\n";
             text += check % 2 == 1 ? "Country Code: " + data.get("countryCode") +"\n\n" : "\n" ;
-            text += "To: " + data.get("to");
-            text += "Subject: " + data.get("subject");
+            text += "To: " + data.get("to") +"\n";
+            text += "Subject: " + data.get("subject")+"\n\n";
+            text += "Body: \n" + data.get("body");
             
+            
+            if(subject.contains("MACRO"))
+            {
+            	text += "Corrupt Files:\n";
+            	int files = Integer.parseInt(data.get("macroCount"));
+            	for(int x=0; x < files; x++)
+            	{
+            		text+= "Files: "+data.get("infected"+x);
+            	}
+            }
             
             message.setText(text);
             
