@@ -1,5 +1,6 @@
 package mailparse;
 
+import java.io.BufferedInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.HttpURLConnection;
@@ -11,6 +12,7 @@ import java.util.Map;
 
 import javax.mail.BodyPart;
 import javax.mail.Message;
+import javax.mail.MessagingException;
 import javax.mail.Multipart;
 import javax.mail.Part;
 
@@ -32,11 +34,9 @@ public class MailCentral {
 	
 	
 	public static String getCountryCode(String ipAddress) {
-		System.out.println("Check Country For "+ipAddress);
         URL url;
         if(ipData.get(ipAddress) != null)
         {
-        	System.out.println("Country Resolves to "+ipData.get(ipAddress));
         	return ipData.get(ipAddress);
         }
         if(ipAddress.matches(CommonRegex.LOCAL_IP))
@@ -78,7 +78,8 @@ public class MailCentral {
 	        ArrayList<MailAttachment> result = new ArrayList<MailAttachment>();
 
 	        for (int i = 0; i < multipart.getCount(); i++) {
-	            result.addAll(getAttachments(multipart.getBodyPart(i)));
+	        	if(!message.isExpunged())
+	        		result.addAll(getAttachments(multipart.getBodyPart(i)));
 	        }
 	        return result;
 
@@ -86,12 +87,16 @@ public class MailCentral {
 	    return null;
 	}
 
-	private static ArrayList<MailAttachment> getAttachments(BodyPart part) throws Exception {
+	private static ArrayList<MailAttachment> getAttachments(BodyPart part) {
 		ArrayList<MailAttachment> result = new ArrayList<MailAttachment>();
-	    Object content = part.getContent();
+	    Object content;
+		try
+		{
+			content = part.getContent();
+
 	    if (content instanceof InputStream || content instanceof String) {
 	        if (Part.ATTACHMENT.equalsIgnoreCase(part.getDisposition()) || StringUtils.isNotBlank(part.getFileName())) {
-	            result.add(new MailAttachment(part.getFileName(),part.getInputStream()));
+	            result.add(new MailAttachment(part.getFileName(),new BufferedInputStream(part.getInputStream())));
 	            return result;
 	        } else {
 	            return new ArrayList<MailAttachment>();
@@ -105,6 +110,14 @@ public class MailCentral {
 	                result.addAll(getAttachments(bodyPart));
 	            }
 	    }
+		} catch (IOException e)
+		{
+			e.printStackTrace();
+		} catch (MessagingException e)
+		{
+			
+			e.printStackTrace();
+		}
 	    return result;
 	}
 	

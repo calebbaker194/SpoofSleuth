@@ -15,6 +15,9 @@ import javax.mail.Session;
 import javax.mail.Store;
 import javax.mail.event.MessageCountAdapter;
 import javax.mail.event.MessageCountEvent;
+
+import org.apache.poi.poifs.filesystem.FileMagic;
+
 import com.sun.mail.imap.IMAPFolder;
 import com.sun.mail.imap.IMAPStore;
 import data.Database;
@@ -38,6 +41,7 @@ public class MailMonitor {
 	    properties.put("mail.imaps.timeout", "10000");
 	
 	    Session session = Session.getInstance(properties);
+	    //session.setDebug(true);
 	                                                       
 	    IMAPStore store = null;
 	    Folder inbox = null;
@@ -75,11 +79,26 @@ public class MailMonitor {
 	                    	
 	                    	// Spoof Check
 	                    	String returnPath = message.getHeader("Return-Path")[0];
-	                    	String returnPathAddress = returnPath.substring(returnPath.indexOf('<')+1,returnPath.indexOf('>'));
+	                    	String returnPathAddress = "";
+	                    	try 
+	                    	{
+	                    		returnPathAddress = returnPath.substring(returnPath.indexOf('<')+1,returnPath.indexOf('>'));
+	                    	}
+	                    	catch(StringIndexOutOfBoundsException err)
+	                    	{
+	                    		returnPathAddress = returnPath;
+	                    	}
 	                    	String fromField = message.getFrom()[0].toString();
-	                    	System.out.println("  !FF!   " +fromField);
-	                    	System.out.println("  !RP!   "+returnPathAddress);
-	                    	String fromFieldAddress = fromField.substring(fromField.indexOf('<')+1,fromField.indexOf('>'));
+	                    	String fromFieldAddress = "";
+	                    	try 
+	                    	{
+	                    		fromFieldAddress = fromField.substring(fromField.indexOf('<')+1,fromField.indexOf('>'));
+	                    	}
+	                    	catch(StringIndexOutOfBoundsException err)
+	                    	{
+	                    		fromFieldAddress = fromField;
+	                    	}
+	                    	
 	                    	String domain = fromFieldAddress.substring(fromFieldAddress.indexOf('@')+1);
 	                    	
 	                    	// Macro Check
@@ -90,12 +109,23 @@ public class MailMonitor {
 	                    	{
 		                    	for(MailAttachment st : attachments)
 		                    	{
-		                    		corrupt.add(st);
-		                    		macroCount += PoiMaster.hasMacro(st.getAttachment()) ? 1 : 0;
+		                    		if(FileMagic.valueOf(st.getAttachment()) == FileMagic.OLE2 || FileMagic.valueOf(st.getAttachment()) ==  FileMagic.OOXML)
+		                    		{
+		                    			if(PoiMaster.hasMacro(st.getAttachment()))
+		                    			{
+		                    				corrupt.add(st);
+		                    				macroCount++;
+		                    			}
+		                    		}
+		                    		else if(st.getName().substring(st.getName().lastIndexOf('.')).matches("(.exe)|(.zip)"))
+		                    		{
+		                    			corrupt.add(st);
+		                    			macroCount++;
+		                    		}
 		                    	}
 	                    	}
 	                    	
-	                    	
+	                    	//TODO - Phishing Check 
 	                    	
 	                    	// Notify Results
 	                    	int check=0;

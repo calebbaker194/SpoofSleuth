@@ -35,7 +35,7 @@ public class Notifier {
             
             String subject = "";
             
-            subject += check > 8 ? "MACRO DETECTED: " : "" ; // check for 8
+            subject += check > 7 ? "MACRO DETECTED: " : "" ; // check for 8
             subject += check % 8 > 3 ? "POSSIBLE SPOOF: " : "" ; // check for 4
             subject += check % 4 > 1 ? "SPF FAILURE: " : "" ; // check for 2
             subject += check % 2 == 1 ? "COUNRTY CODE WARNING: " : "" ; //check for 1
@@ -55,11 +55,11 @@ public class Notifier {
             
             if(subject.contains("MACRO"))
             {
-            	text += "Corrupt Files:\n";
+            	text += "\n\nCorrupt Files:\n";
             	int files = Integer.parseInt(data.get("macroCount"));
             	for(int x=0; x < files; x++)
             	{
-            		text+= "Files: "+data.get("infected"+x);
+            		text+= "File: "+data.get("infected"+x) +"\n";
             	}
             }
             

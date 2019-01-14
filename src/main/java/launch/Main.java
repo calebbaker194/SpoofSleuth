@@ -25,6 +25,7 @@ public class Main implements Runnable {
 	
 	public Main() throws RemoteException 
 	{	
+		
 		//Check for database and create one if it does not exists
 		if(!Database.exists())
 		{
