@@ -10,11 +10,13 @@ import javax.mail.Folder;
 import javax.mail.FolderClosedException;
 import javax.mail.Message;
 import javax.mail.MessagingException;
+import javax.mail.Multipart;
 import javax.mail.NoSuchProviderException;
 import javax.mail.Session;
 import javax.mail.Store;
 import javax.mail.event.MessageCountAdapter;
 import javax.mail.event.MessageCountEvent;
+import javax.mail.internet.MimeBodyPart;
 
 import org.apache.poi.poifs.filesystem.FileMagic;
 
@@ -152,7 +154,7 @@ public class MailMonitor {
 	                    		
 	                    		tmp.put("to", recp.substring(0,recp.length()-1));
 	                    		tmp.put("subject", message.getSubject());
-	                    		tmp.put("body", message.getContent().toString());
+	                    		tmp.put("body", MailCentral.getBody(message));
 	                    		tmp.put("macroCount",""+macroCount);
 	                    		
 	                    		for(int x=0; x<macroCount; x++)

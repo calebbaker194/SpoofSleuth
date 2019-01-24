@@ -12,6 +12,7 @@ import java.util.Map;
 
 import javax.mail.BodyPart;
 import javax.mail.Message;
+import javax.mail.MessageRemovedException;
 import javax.mail.MessagingException;
 import javax.mail.Multipart;
 import javax.mail.Part;
@@ -110,9 +111,15 @@ public class MailCentral {
 	                result.addAll(getAttachments(bodyPart));
 	            }
 	    }
+		} catch (MessageRemovedException e)
+		{
+			System.out.println("Message Removed");
 		} catch (IOException e)
 		{
-			e.printStackTrace();
+			if(e.getCause() instanceof MessageRemovedException)
+				System.out.println("Message Removed");
+			else
+				e.printStackTrace();
 		} catch (MessagingException e)
 		{
 			
@@ -130,5 +137,71 @@ public class MailCentral {
 	public static void saveIpData()
 	{
 		FetchNStore.saveIpData(ipData);
+	}
+
+	public static String getBody(Message message)
+	{
+		try 
+		{
+		    Object content = message.getContent();
+		    if (content instanceof String)
+		        return (String) content;        
+
+		    if (content instanceof Multipart) {
+		        Multipart multipart = (Multipart) content;
+		        String result = "";
+	
+		        for (int i = 0; i < multipart.getCount(); i++) {
+		        	if(!message.isExpunged())
+		        		result += (getBody(multipart.getBodyPart(i)));
+		        }
+		        return result;
+	
+		    }
+		} catch (MessageRemovedException e)
+		{
+			System.out.println("Message Removed");
+		} catch (IOException e)
+		{
+			e.printStackTrace();
+		} catch (MessagingException e)
+		{
+			e.printStackTrace();
+		}
+	    return "";
+	}
+
+	private static String getBody(BodyPart part)
+	{
+		String result = "";
+	    Object content;
+		try
+		{
+			content = part.getContent();
+
+	    if (content instanceof String) 
+	    {
+	       return result + content;
+	    }
+
+	    if (content instanceof Multipart) {
+	            Multipart multipart = (Multipart) content;
+	            for (int i = 0; i < multipart.getCount(); i++) {
+	                BodyPart bodyPart = multipart.getBodyPart(i);
+	                result += (getAttachments(bodyPart));
+	            }
+	    }
+		} catch (MessageRemovedException e)
+		{
+			System.out.println("Message Removed");
+		} catch (IOException e)
+		{
+			e.printStackTrace();
+		} catch (MessagingException e)
+		{
+			
+			e.printStackTrace();
+		}
+	    return result;
 	}
 }
